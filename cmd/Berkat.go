@@ -13,6 +13,7 @@ import (
 	"time"
 	telegram "web-scraper/tg-bot"
 
+	"github.com/go-co-op/gocron"
 	"github.com/gocolly/colly"
 	"github.com/joho/godotenv"
 )
@@ -38,14 +39,13 @@ func init() {
 
 func main() {
 	BotToken = os.Getenv("BOT_TOKEN")
-	// fmt.Println(BotToken)
-	// //инициализируем объект планировщика
-	// s := gocron.NewScheduler(time.UTC)
-	// // добавляем одну задачу на каждые 10 минут
-	// s.Cron("* * * * *").Do(task)
-	// // запускаем планировщик с блокировкой текущего потока
-	// s.StartBlocking()
-	task()
+	fmt.Println(BotToken)
+	//инициализируем объект планировщика
+	s := gocron.NewScheduler(time.UTC)
+	// добавляем одну задачу на каждые 10 минут
+	s.Cron("*/10 * * * *").Do(task)
+	// запускаем планировщик с блокировкой текущего потока
+	s.StartBlocking()
 }
 
 // func testTask(){
