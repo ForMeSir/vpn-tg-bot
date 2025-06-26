@@ -19,13 +19,11 @@ import (
 )
 
 type Object struct {
-	Id        int
-	Country   string
-	CreatedAt string
-	//Time      string
-	Type   string
-	Online string
-	Key    string
+	Id      int
+	Country string
+	Type    string
+	Online  string
+	Key     string
 }
 
 var BotToken string
@@ -39,8 +37,6 @@ func init() {
 
 func main() {
 	BotToken = os.Getenv("BOT_TOKEN")
-	fmt.Println(BotToken)
-	//инициализируем объект планировщика
 	s := gocron.NewScheduler(time.UTC)
 	// добавляем одну задачу на каждые 10 минут
 	s.Cron("*/10 * * * *").Do(task)
@@ -69,10 +65,8 @@ func GetKeys() []Object {
 
 	c := colly.NewCollector()
 	// set a valid User-Agent header
-
 	c.UserAgent = "Mozilla/5.0 (compatible; MSIE 9.0; Windows; U; Windows NT 6.1; Win64; x64 Trident/5.0)"
-	var der Object
-	var keys []Object
+	keys := make([]Object, 1)
 
 	file, err := os.Open("cmd/fer.txt")
 	if err != nil {
@@ -82,28 +76,28 @@ func GetKeys() []Object {
 
 	data := make([]byte, 64)
 
-	for {
-		n, err := file.Read(data)
-		if err == io.EOF {
-			break
-		}
-		lastID, _ = strconv.Atoi(string(data[:n]))
-		if err != nil {
-			fmt.Println("Ошибка c получением последнего ID")
-		}
+	n, err := file.Read(data)
+	if err == io.EOF {
+		fmt.Println("Ошибка при чтении файла")
+	}
+	lastID, _ = strconv.Atoi(string(data[:n]))
+	if err != nil {
+		fmt.Println("Ошибка c получением последнего ID")
 	}
 
 	file.Close()
 
-	var jart bool = true
-	der.Id = lastID + 1
-	keys = append(keys, der)
-	for i := 1; lastID < keys[len(keys)-1].Id; i++ {
+	var Continue bool = true
+	keys[0].Id = lastID + 1
+
+	for i := 1; lastID != keys[len(keys)-1].Id; i++ {
 
 		c.OnHTML(".col", func(e *colly.HTMLElement) {
-			count := e.ChildText(".d-flex.justify-content-between.align-items-center h3")
 			var key Object
 			var err error
+
+			count := e.ChildText(".d-flex.justify-content-between.align-items-center h3")
+
 			IdAndCount := strings.Split(count, "#")
 			key.Id, err = strconv.Atoi(IdAndCount[1])
 			if err != nil {
@@ -111,41 +105,37 @@ func GetKeys() []Object {
 			}
 			key.Country = IdAndCount[0]
 
-			// count = e.ChildText(".card-footer.text-muted.d-flex.justify-content-between.align-items-center .d-flex.align-items-center")
-			// times := strings.Split(count, "ago")
-			// key.Time = times[0]
-
 			key.Type = e.ChildText(".me-2")
+
 			key.Online = e.ChildText(".text-success")
 			if key.Online == "" {
 				key.Online = "Offline"
 			}
-			if key.Id <= lastID {
-				if len(keys) > 1 {
-					err := os.Remove("cmd/fer.txt")
-					if err != nil {
-						fmt.Println("Ошибка при удалении файла:", err)
-					}
-
-					file, err := os.Create("cmd/fer.txt")
-
-					if err != nil {
-						fmt.Println("Unable to create file:", err)
-						os.Exit(1)
-					}
-					defer file.Close()
-
-					file.WriteString(strconv.Itoa(keys[1].Id))
+			if key.Id == lastID {
+				err := os.Remove("cmd/fer.txt")
+				if err != nil {
+					fmt.Println("Ошибка при удалении файла:", err)
 				}
-				jart = false
+
+				file, err := os.Create("cmd/fer.txt")
+
+				if err != nil {
+					fmt.Println("Unable to create file:", err)
+					os.Exit(1)
+				}
+				defer file.Close()
+
+				file.WriteString(strconv.Itoa(keys[1].Id))
+				Continue = false
 			}
-			if jart {
+			if Continue {
 				keys = append(keys, key)
 			}
+
 		})
 		num := strconv.Itoa(i)
 		c.Visit("https://outlinekeys.com/?page=" + num)
-		if lastID < keys[len(keys)-1].Id {
+		if !Continue {
 			break
 		}
 	}
