@@ -13,6 +13,7 @@ import (
 	"time"
 	telegram "web-scraper/tg-bot"
 
+	"github.com/go-co-op/gocron"
 	"github.com/gocolly/colly"
 	"github.com/joho/godotenv"
 )
@@ -36,12 +37,12 @@ func init() {
 
 func main() {
 	BotToken = os.Getenv("BOT_TOKEN")
-	// s := gocron.NewScheduler(time.UTC)
-	// // добавляем одну задачу на каждые 10 минут
-	// s.Cron("*/10 * * * *").Do(task)
-	// // запускаем планировщик с блокировкой текущего потока
-	// s.StartBlocking()
-	task()
+	s := gocron.NewScheduler(time.UTC)
+	// добавляем одну задачу на каждые 10 минут
+	s.Cron("*/10 * * * *").Do(task)
+	// запускаем планировщик с блокировкой текущего потока
+	s.StartBlocking()
+	// task()
 }
 
 // func testTask(){
@@ -130,11 +131,10 @@ func GetKeys() []Object {
 				defer file.Close()
 				if len(keys) == 0 {
 					file.WriteString(strconv.Itoa(key.Id))
-					Continue = false
 				} else {
 					file.WriteString(strconv.Itoa(keys[0].Id))
-					Continue = false
 				}
+				Continue = false
 			}
 			if Continue {
 				keys = append(keys, key)
