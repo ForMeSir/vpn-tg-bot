@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
 	telegram "web-scraper/tg-bot"
 
 	"github.com/go-co-op/gocron"
@@ -42,7 +43,7 @@ func main() {
 	s.Cron("*/10 * * * *").Do(task)
 	// запускаем планировщик с блокировкой текущего потока
 	s.StartBlocking()
-	// task()
+	//task()
 }
 
 // func testTask(){
@@ -56,7 +57,7 @@ func task() {
 		for i := len(keys) - 1; i >= 0; i-- {
 			if keys[i].Key != "" {
 				err := c.SendMessage("Доступен новый ключ \xF0\x9F\x94\x91 \n\n\xF0\x9F\x93\x8D Локация: "+keys[i].Country+"\n\xF0\x9F\x8C\x90 Трафик: \xE2\x99\xBE \n\n\xF0\x9F\x94\x92 Тип: "+keys[i].Type+"  ```\n"+keys[i].Key+"```", int64(-1002343650923))
-				if err!=nil  {
+				if err != nil {
 					fmt.Println("Cлишком много ключей")
 					time.Sleep(2 * time.Minute)
 				}
@@ -70,9 +71,6 @@ func task() {
 func GetKeys() []Object {
 	var lastID int
 
-	c := colly.NewCollector()
-	// set a valid User-Agent header
-	c.UserAgent = "Mozilla/5.0 (compatible; MSIE 9.0; Windows; U; Windows NT 6.1; Win64; x64 Trident/5.0)"
 	var keys []Object
 
 	file, err := os.Open("cmd/fer.txt")
@@ -96,13 +94,16 @@ func GetKeys() []Object {
 
 	var Continue bool = true
 	for i := 1; len(keys) == 0 || lastID < keys[len(keys)-1].Id; i++ {
+		c := colly.NewCollector()
+		// set a valid User-Agent header
+		c.UserAgent = "Mozilla/5.0 (compatible; MSIE 9.0; Windows; U; Windows NT 6.1; Win64; x64 Trident/5.0)"
+
 		c.OnHTML(".col", func(e *colly.HTMLElement) {
 			var key Object
 			var err error
 
 			count := e.ChildText(".d-flex.justify-content-between.align-items-center h3")
-
-			IdAndCount := strings.Split(count, "#")
+			IdAndCount := strings.Split(count, " #")
 			key.Id, err = strconv.Atoi(IdAndCount[1])
 			if err != nil {
 				fmt.Println("Ошибка при получении ID")
@@ -150,10 +151,9 @@ func GetKeys() []Object {
 	var SendKeys []Object
 
 	for _, value := range keys {
-		if value.Country == "Russia" || value.Type == "Vless" || value.Online == "Offline" {
-			continue
+		if value.Country != "Russia" && value.Type != "Vless" && value.Online != "Offline" {
+			SendKeys = append(SendKeys, value)
 		}
-		SendKeys = append(SendKeys, value)
 	}
 	for num, value := range SendKeys {
 		href := "/key/" + strconv.Itoa(value.Id) + "/"
